@@ -1,0 +1,202 @@
+<HTML5>
+<head>
+<script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+<script src="http://code.highcharts.com/highcharts.js"></script>
+<script src= "https://cdn.zingchart.com/zingchart.min.js"></script>
+<script> zingchart.MODULESDIR = "https://cdn.zingchart.com/modules/";
+		ZC.LICENSE = ["569d52cefae586f634c54f86dc99e6a9","ee6b7db5b51705a13dc2339db3edaf6d"];
+		</script>
+<!-- Latest compiled and minified CSS -->
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+
+<!-- Optional theme -->
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css" integrity="sha384-rHyoN1iRsVXV4nD0JutlnGaslCJuC7uwjduW9SVrLvRYooPp2bWYgmgJQIXwl/Sp" crossorigin="anonymous">
+
+<!-- Latest compiled and minified JavaScript -->
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+
+
+
+<script type="text/javascript">
+	$( document ).ready(function() {
+		$("#butt").click(function( event ) {
+			event.preventDefault();	
+			var uname = $('[name="username"]').val();
+			var minN = $('[name="minN"]').val();
+			console.log(minN);
+			if(minN && uname){
+				console.log(minN);
+			}
+			else{
+				alert("Please fill the fields!");
+				return;
+			}
+			myurl = '/getFeed?username=' + uname;
+			$("#butt").prop('disabled', true);
+			$("#loader").css("display","block");
+			$(".showMe").css("display","none");
+
+			$("#rawData").html("");
+			$("#totalPosts").html("");
+			$("#container").html("");
+			$("#container2").html("");
+			$("#myChart").html("");
+
+			$.ajax({
+				url: myurl,
+				error: function (error) {
+					$("#loader").css("display","none");
+					$("#butt").prop('disabled', false);
+                    alert('error; Some error occured with the handle, please try again! \n' + eval(error));
+
+              	},
+				success: function(data){
+					$("#loader").css("display","none");
+					$(".showMe").css("display","block");
+					$("#butt").prop('disabled', false);
+		  			var dates = eval(data["dates"]);
+		  			var hours = eval(data["hours"]);
+		  			var datesKeys = [];
+		  			var datesValues = [];
+		  			var hourKeys = [];
+		  			var hourValues = [];
+
+
+
+					$("#totalPosts").html("<b>Total Posts by the user: </b>"+data["posts"] + "<br/>");
+					$("#totalPosts").append("<b>Name: </b>"+data["name"] + "<br/>");
+					$("#totalPosts").append("<b>friends_count: </b>"+data["friends_count"] + "<br/>");
+					$("#totalPosts").append("<b>location: </b>"+data["location"] + "<br/>");
+					
+					// $("#rawData").html(data["allPosts"]);
+					var allPosts = data["allPosts"];
+		  			for (var key in allPosts) {
+					    if (allPosts.hasOwnProperty(key)) {
+  							// $("#rawData").append(key+': '+allPosts[key].text+" "+allPosts[key].created_at + '<br/>');
+  							$("#tableBody").append("<tr><td>"+allPosts[key].created_at+"</td><td>"+allPosts[key].text+"</td><td>"+allPosts[key].source +"</td><td>"+allPosts[key].favorite_count+"</td><td>"+allPosts[key].retweet_count+"</td></tr>")
+					    }
+					}
+		  			for (var key in dates) {
+					    if (dates.hasOwnProperty(key)) {
+  							// $("#rawData").append(key+': '+dates[key]+ '<br/>');
+  							datesKeys.push(key);
+  							datesValues.push(dates[key]);
+					    }
+					}
+		  			for (var key in hours) {
+					    if (hours.hasOwnProperty(key)) {
+  							// $("#rawData").append(key+': '+hours[key]+ '<br/>');
+  							hourKeys.push( parseInt(key));
+  							hourValues.push( parseInt(hours[key]));
+					    }
+					}
+					$(function () {
+					    $('#container').highcharts({
+					        title: {
+					            text: 'Yearly Activity'
+					        },
+					        xAxis: {
+					            categories: datesKeys
+					        },
+					        series: [{
+					            data: datesValues,
+					            name: uname
+					        }]
+
+					    });
+					});
+					$(function () { 
+					    $('#container2').highcharts({
+					        chart: {
+					            renderTo: 'container',
+					            type: 'column'
+					        },
+					        title: {
+					            text: 'Hourly Activity',
+					            tickInterval: 1
+					        },
+					        xAxis: {
+					            categories: hourKeys,
+            					tickInterval: 1
+					        },
+					        yAxis: {
+					            title: {
+					                text: 'Hour of the day!',
+					            	data: hourValues
+					            }
+					        },
+					        series: [{
+					        	name: uname,
+					            data: hourValues
+					        }]
+					    });
+					});					
+					var myConfig = {
+					    "graphset":[
+					        {
+					            "type":"wordcloud",
+					            "options":{
+					                "text":data["full_text"],
+					                "min-length" : minN
+					            }
+					        }
+					    ]
+					};
+ 
+					zingchart.render({ 
+						id : 'myChart', 
+						data : myConfig, 
+						height: "100%", 
+						width: "100%"
+					});
+				}
+			});	
+	  	});
+	});
+</script>
+
+</head>
+<body>
+
+
+<div class="container" style="width:400px;margin:40px">
+		<div class="form-group">
+		<label for="username">Twitter Handle:</label>
+		<input class="form-control" type="text" id="username" name="username" placeholder="Username" value="DheerajSanghi" required>
+		</div>
+		<div class="form-group">
+			<label for="minN">n for data cloud:</label>
+			<input class="form-control" type="number" id="minN" name="minN" value="20" placeholder="10" required>
+		</div>
+		<input type="submit" name="" id="butt">
+</div>
+
+<br/><br/><br/>
+
+<div id="loader" style="display:none" align="center">
+	<!-- <img src="http://educationportal.uk.gov.in:8080/images/ajax-loader.gif" alt="HTML5 Icon" width="128" height="128"> -->
+	<img src="http://www.downgraf.com/wp-content/uploads/2014/09/01-progress.gif?af0b37" alt="HTML5 Icon" width="128" height="128">
+</div>
+
+<section style="margin:20px">
+	<p id="totalPosts" class="showMe" align="center"></p>
+	<div id="container" class="showMe" style="width:100%; height:400px;display:none"></div>
+	<div id="container2" class="showMe" style="width:100%; height:400px;display:none"></div>
+	<div id='myChart' class="showMe" style="width:100%; height:400px;display:none"></div>
+	<p id="rawData" class="showMe" style="display:none"></p>
+	<div class="showMe" style="display:none">
+	<table class="table table-bordered table-hover" >
+		<thead>
+				<th>Date</th>
+				<th>Text</th>
+				<th>Source</th>
+				<th>Favorite Count</th>
+				<th>Retweet Count</th>
+		</thead>
+		<tbody id="tableBody">
+		</tbody>
+	</table>
+	</div>
+</section>
+
+</body>
